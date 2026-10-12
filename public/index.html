@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Antigravity Quota Monitor</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-dim: #8b949e;
+    --healthy: #3fb950;
+    --moderate: #d29922;
+    --low: #db6d28;
+    --critical: #f85149;
+    --exhausted: #da3633;
+    --accent: #58a6ff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 16px;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 480px;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 28px;
+  }
+
+  .error-banner {
+    background: rgba(248, 81, 73, 0.10);
+    border: 1px solid rgba(248, 81, 73, 0.3);
+    border-radius: 8px;
+    padding: 12px 16px;
+    text-align: center;
+    color: var(--critical);
+    margin-bottom: 16px;
+    font-size: 13px;
+    display: none;
+  }
+  .error-banner.visible { display: block; }
+
+  .group {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 14px;
+  }
+
+  .group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 16px;
+  }
+
+  .group-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .group-desc {
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .bucket {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    transition: background 0.2s;
+  }
+  .bucket:last-child { margin-bottom: 0; }
+
+  .bucket-left {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 120px;
+  }
+
+  .bucket-label {
+    font-size: 13px;
+    color: var(--text-dim);
+    font-weight: 500;
+  }
+
+  .bucket-countdown {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+    opacity: 0.7;
+  }
+
+  .bucket-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .bucket-pct {
+    font-size: 24px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    min-width: 60px;
+    text-align: right;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .status-tag {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    min-width: 64px;
+    text-align: center;
+  }
+
+  /* Status colors */
+  .status-healthy   .bucket-pct,
+  .status-healthy   .status-tag  { color: var(--healthy); }
+  .status-healthy   .status-dot  { background: var(--healthy); box-shadow: 0 0 6px var(--healthy); }
+
+  .status-moderate  .bucket-pct,
+  .status-moderate  .status-tag  { color: var(--moderate); }
+  .status-moderate  .status-dot  { background: var(--moderate); box-shadow: 0 0 6px var(--moderate); }
+
+  .status-low       .bucket-pct,
+  .status-low       .status-tag  { color: var(--low); }
+  .status-low       .status-dot  { background: var(--low); box-shadow: 0 0 6px var(--low); }
+
+  .status-critical  .bucket-pct,
+  .status-critical  .status-tag  { color: var(--critical); }
+  .status-critical  .status-dot  { background: var(--critical); box-shadow: 0 0 6px var(--critical); animation: pulse 1.5s ease-in-out infinite; }
+
+  .status-exhausted .bucket-pct,
+  .status-exhausted .status-tag  { color: var(--exhausted); }
+  .status-exhausted .status-dot  { background: var(--exhausted); box-shadow: 0 0 8px var(--exhausted); animation: pulse 1s ease-in-out infinite; }
+
+  .status-unavailable .bucket-pct { color: var(--text-dim); }
+  .status-unavailable .status-tag { color: var(--text-dim); }
+  .status-unavailable .status-dot { background: var(--text-dim); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* Lowest-quota highlight */
+  .lowest-quota {
+    background: rgba(248, 81, 73, 0.06);
+    border: 1px solid rgba(248, 81, 73, 0.15);
+  }
+
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    padding: 0 4px;
+  }
+
+  .last-updated {
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  .refresh-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--accent);
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .refresh-btn:hover {
+    background: rgba(88, 166, 255, 0.08);
+    border-color: var(--accent);
+  }
+  .refresh-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .next-refresh {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-align: center;
+    margin-top: 8px;
+    opacity: 0.6;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Antigravity Quota</h1>
+  <div id="error-banner" class="error-banner"></div>
+  <div id="groups"></div>
+  <div class="footer">
+    <span class="last-updated" id="last-updated">Loading…</span>
+    <button class="refresh-btn" id="refresh-btn" onclick="manualRefresh()">Refresh</button>
+  </div>
+  <div class="next-refresh" id="next-refresh"></div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const AUTO_REFRESH_MS = 60_000;
+  let nextAutoRefresh = 0;
+  let refreshTimer = null;
+  let lastData = null;
+
+  // ── Status helpers ──────────────────────────────────────────────
+
+  function getStatus(fraction) {
+    if (fraction === null || fraction === undefined) return { cls: 'unavailable', label: 'Unavailable' };
+    const pct = fraction * 100;
+    if (pct <= 0)   return { cls: 'exhausted', label: 'Exhausted' };
+    if (pct < 15)   return { cls: 'critical',  label: 'Critical' };
+    if (pct < 40)   return { cls: 'low',       label: 'Low' };
+    if (pct <= 75)  return { cls: 'moderate',  label: 'Moderate' };
+    return { cls: 'healthy', label: 'Healthy' };
+  }
+
+  function formatPct(fraction) {
+    if (fraction === null || fraction === undefined) return '—';
+    return Math.round(fraction * 100) + '%';
+  }
+
+  /** Map window/displayName to a short label */
+  function shortLabel(bucket) {
+    const w = (bucket.window || '').toLowerCase();
+    if (w === 'weekly') return 'Weekly';
+    if (w === '5h') return '5 Hour';
+    // Fallback: use displayName but strip "Limit Remaining"
+    const dn = bucket.displayName || '';
+    return dn.replace(/\s*Limit\s*Remaining\s*/i, '').trim() || w || 'Bucket';
+  }
+
+  function formatCountdown(resetTime) {
+    if (!resetTime) return '';
+    let target;
+    const d = new Date(resetTime);
+    if (!isNaN(d.getTime())) {
+      target = d.getTime();
+    } else {
+      const epoch = Number(resetTime);
+      if (!isNaN(epoch)) {
+        target = epoch * 1000;
+      } else {
+        return '';
+      }
+    }
+    const diff = target - Date.now();
+    if (diff <= 0) return 'Resetting soon';
+    return 'Resets in ' + formatMs(diff);
+  }
+
+  function formatMs(ms) {
+    const totalSec = Math.floor(ms / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    const parts = [];
+    if (h > 0) parts.push(h + 'h');
+    if (m > 0 || h > 0) parts.push(String(m).padStart(h > 0 ? 2 : 1, '0') + 'm');
+    parts.push(String(s).padStart(2, '0') + 's');
+    return parts.join(' ');
+  }
+
+  function esc(s) {
+    const el = document.createElement('span');
+    el.textContent = s;
+    return el.innerHTML;
+  }
+
+  /** Map group displayName to short heading */
+  function groupHeading(name) {
+    const n = (name || '').toLowerCase();
+    if (n.includes('gemini')) return 'Gemini Models';
+    if (n.includes('claude') || n.includes('gpt')) return 'Claude + GPT';
+    return name;
+  }
+
+  // ── Render ──────────────────────────────────────────────────────
+
+  function render(data) {
+    lastData = data;
+    const banner = document.getElementById('error-banner');
+    const groupsEl = document.getElementById('groups');
+    const updatedEl = document.getElementById('last-updated');
+
+    if (data.error) {
+      banner.textContent = data.error;
+      banner.classList.add('visible');
+    } else {
+      banner.classList.remove('visible');
+    }
+
+    if (data.fetchedAt) {
+      const d = new Date(data.fetchedAt);
+      updatedEl.textContent = 'Last updated: ' + d.toLocaleTimeString();
+    }
+
+    if (!data.groups || data.groups.length === 0) {
+      if (!data.error) {
+        groupsEl.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:32px 0;font-size:13px;">No quota data available</div>';
+      } else {
+        groupsEl.innerHTML = '';
+      }
+      return;
+    }
+
+    // Find lowest fraction for highlighting
+    let lowestFraction = Infinity;
+    let lowestKey = null;
+    for (const g of data.groups) {
+      for (let i = 0; i < g.buckets.length; i++) {
+        const b = g.buckets[i];
+        if (b.remainingFraction !== null && b.remainingFraction !== undefined && b.remainingFraction < lowestFraction) {
+          lowestFraction = b.remainingFraction;
+          lowestKey = g.name + '|' + i;
+        }
+      }
+    }
+
+    let html = '';
+    for (const group of data.groups) {
+      html += '<div class="group">';
+      html += '<div class="group-header">';
+      html += '<span class="group-name">' + esc(groupHeading(group.name)) + '</span>';
+      html += '</div>';
+
+      for (let i = 0; i < group.buckets.length; i++) {
+        const bucket = group.buckets[i];
+        const status = getStatus(bucket.remainingFraction);
+        const key = group.name + '|' + i;
+        const isLowest = key === lowestKey && lowestFraction < 1;
+        const lowestCls = isLowest ? ' lowest-quota' : '';
+        const label = shortLabel(bucket);
+        const countdown = formatCountdown(bucket.resetTime);
+
+        html += '<div class="bucket status-' + status.cls + lowestCls + '">';
+        html += '  <div class="bucket-left">';
+        html += '    <span class="bucket-label">' + esc(label) + '</span>';
+        html += '    <span class="bucket-countdown" data-reset="' + esc(String(bucket.resetTime || '')) + '">' + countdown + '</span>';
+        html += '  </div>';
+        html += '  <div class="bucket-right">';
+        html += '    <span class="status-dot"></span>';
+        html += '    <span class="status-tag">' + status.label + '</span>';
+        html += '    <span class="bucket-pct">' + formatPct(bucket.remainingFraction) + '</span>';
+        html += '  </div>';
+        html += '</div>';
+      }
+
+      html += '</div>';
+    }
+
+    groupsEl.innerHTML = html;
+  }
+
+  // ── Countdown ticker (every 1 s) ──────────────────────────────
+
+  setInterval(function () {
+    // Update reset countdowns
+    document.querySelectorAll('.bucket-countdown[data-reset]').forEach(function (el) {
+      const reset = el.getAttribute('data-reset');
+      if (reset) el.textContent = formatCountdown(reset);
+    });
+    // Update next-refresh
+    var nextEl = document.getElementById('next-refresh');
+    if (nextAutoRefresh > 0) {
+      var diff = nextAutoRefresh - Date.now();
+      if (diff > 0) {
+        nextEl.textContent = 'Next refresh in ' + Math.ceil(diff / 1000) + 's';
+      } else {
+        nextEl.textContent = '';
+      }
+    }
+  }, 1000);
+
+  // ── API ────────────────────────────────────────────────────────
+
+  function scheduleAutoRefresh() {
+    if (refreshTimer) clearTimeout(refreshTimer);
+    nextAutoRefresh = Date.now() + AUTO_REFRESH_MS;
+    refreshTimer = setTimeout(doRefresh, AUTO_REFRESH_MS);
+  }
+
+  async function doRefresh() {
+    var btn = document.getElementById('refresh-btn');
+    btn.disabled = true;
+    btn.textContent = 'Refreshing…';
+    try {
+      var res = await fetch('/api/quota', { method: 'POST' });
+      var data = await res.json();
+      render(data);
+    } catch (e) {
+      render({ groups: [], fetchedAt: new Date().toISOString(), error: 'Cannot reach monitor server' });
+    }
+    btn.disabled = false;
+    btn.textContent = 'Refresh';
+    scheduleAutoRefresh();
+  }
+
+  window.manualRefresh = doRefresh;
+
+  // ── Init ───────────────────────────────────────────────────────
+
+  doRefresh();
+
+})();
+</script>
+</body>
+</html>

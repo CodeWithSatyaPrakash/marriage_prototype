@@ -1,0 +1,199 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Cormorant Garamond", Georgia, serif;
+  --font-script: "Great Vibes", cursive;
+  --font-sans: "Josefin Sans", system-ui, -apple-system, sans-serif;
+
+  --color-ivory: #FAF8F5;
+  --color-blush-pink: #F2D5D0;
+  --color-sage-green: #B5C5A3;
+  --color-champagne-gold: #D4A853;
+  --color-muted-terracotta: #C67B5C;
+  --color-warm-cream: #FFF8F0;
+  --color-deep-rose: #C4847A;
+  --color-soft-mauve: #D4B5B0;
+
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-fade-in: fadeIn 1s ease-out forwards;
+  --animate-shimmer: shimmer 2.5s infinite linear;
+  --animate-petal-fall: petalFall 12s linear infinite;
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-10px) rotate(3deg);
+    }
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  @keyframes petalFall {
+    0% {
+      transform: translateY(-10vh) translateX(0) rotate(0deg);
+      opacity: 0;
+    }
+    10% {
+      opacity: 0.85;
+    }
+    90% {
+      opacity: 0.85;
+    }
+    100% {
+      transform: translateY(105vh) translateX(45px) rotate(360deg);
+      opacity: 0;
+    }
+  }
+}
+
+:root {
+  --font-serif: "Cormorant Garamond", Georgia, serif;
+  --font-script: "Great Vibes", cursive;
+  --font-sans: "Josefin Sans", system-ui, sans-serif;
+
+  --color-ivory: #FAF8F5;
+  --color-blush-pink: #F2D5D0;
+  --color-sage-green: #B5C5A3;
+  --color-champagne-gold: #D4A853;
+  --color-muted-terracotta: #C67B5C;
+  --color-warm-cream: #FFF8F0;
+  --color-deep-rose: #C4847A;
+  --color-soft-mauve: #D4B5B0;
+}
+
+html {
+  scroll-behavior: smooth;
+  background-color: #FAF8F5;
+}
+
+body {
+  margin: 0;
+  background-color: #FAF8F5;
+  color: #3a322d;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Subtle paper texture overlay */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+/* Blush pink selection highlight */
+::selection {
+  background-color: #F2D5D0;
+  color: #4A2B28;
+}
+
+/* Thin, elegant custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #FAF8F5;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D4B5B0;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #C4847A;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #D4B5B0 #FAF8F5;
+}
+
+/* Keyframes fallback */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(3deg);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes petalFall {
+  0% {
+    transform: translateY(-10vh) translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.85;
+  }
+  90% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translateY(105vh) translateX(45px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
